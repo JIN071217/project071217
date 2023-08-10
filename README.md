@@ -4,5 +4,5 @@
 ![bandicam 2023-08-10 01-44-39-116](https://github.com/JIN071217/project071217/assets/141616658/fe555340-f637-4ab5-b652-dbd4d14aad1a)
 
 ## 관리자 모드
-![Uploading bandicam 2023-08-10 16-44-20-743.jpg…]()
+![bandicam 2023-08-10 16-44-20-743](https://github.com/JIN071217/project071217/assets/141616658/67d8dacf-f1fd-4dac-93c4-8285246d1cbd)
 
