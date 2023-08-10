@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.project.mapper.AdOrderMapper">
+
+	<!-- 주문 날짜에 따른 조건 SQL -->
+	<sql id="period">
+		
+		<if test="sDate != null and !sDate.equals('') and sDate != null and !sDate.equals('')">
+			<![CDATA[
+			ord_regdate >= to_date(#{sDate}) 
+			and 
+			ord_regdate < to_date(#{eDate}) + 1
+			and
+			]]>
+		</if>
+	
+	</sql>
+	
+	<!-- 검색조건 작업 : include로 참조 -->
+	<sql id="criteria">
+		<trim prefix="(" suffix=") AND " prefixOverrides="OR"> <!-- trim태그 sql구문중에  맨 앞에 or가 중복되면 제거  -->
+			<foreach collection="cri.typeArr" item="type">
+				<trim prefix="OR">
+					<choose>
+						<when test="type == 'C'.toString()">
+							ord_code like '%' || #{cri.keyword} || '%'
+						</when>
+						<when test="type == 'I'.toString()">
+							mbsp_id like '%' || #{cri.keyword} || '%'
+						</when>
+						<when test="type == 'R'.toString()">
+							ord_name like '%' || #{cri.keyword} || '%'
+						</when>
+					</choose>
+				</trim>
+			</foreach>
+		</trim>
+	</sql>
+	
+	<!-- 주문 목록 조회 조건 SQL 사용 -->
+	<select id="orderList" resultType="com.project.domain.OrderVO" parameterType="com.project.dto.Criteria">
+		<![CDATA[
+		SELECT 
+			RN, ord_code, mbsp_id, ord_name, ord_price, pay_method, ord_regdate
+		FROM 
+			( 
+        		select /*+INDEX_DESC(order_tbl PK_ORD_CODE)  */ 
+        			rownum RN, ord_code, mbsp_id, ord_name, ord_price, pay_method, ord_regdate
+				from 
+					order_tbl
+        		where
+        			
+        ]]>
+        		<include refid="period"></include>
+        		<include refid="criteria"></include>		
+        <![CDATA[		
+        			ROWNUM <= (#{cri.pageNum} * #{cri.amount}) 
+        		
+			)
+		WHERE 
+			RN > ((#{cri.pageNum} - 1) * #{cri.amount})
+		]]>
+	</select>
+	
+	<!-- 전체 주문 수 조회 조건 SQL사용 -->
+	<select id="getTotalCount" resultType="int" parameterType="com.project.dto.Criteria">
+	
+		select count(*) from order_tbl
+		where 
+		<include refid="period"></include>
+		<include refid="criteria"></include>
+		ord_code > 0
+	
+	</select>
+	
+	<!-- 주문 상세 조회 -->
+	<select id="orderDetail" resultType="com.project.domain.AdOrderDetailVO">
+	
+		select 
+			ot.ord_code, ot.pro_num, ot.dt_amount, ot.dt_price, p.pro_name, p.pro_up_folder, p.pro_img
+		from 
+			ordetail_tbl ot inner join product_tbl p
+		on 
+			ot.pro_num = p.pro_num
+		where 
+			ot.ord_code = #{ord_code}
+	
+	</select>
+	
+	<!-- 주문 상세 삭제  -->
+	<!-- 주문 상세 내역 삭제 -->
+	<delete id="orderDetailProductDelete">
+	
+		delete from
+			ordetail_tbl
+		where
+			ord_code = #{ord_code}
+		and
+			pro_num = #{pro_num}
+	
+	</delete>
+	
+	<!-- 주문 상세 내역 조회-->
+	<select id="getOrderDetailCount" parameterType="java.lang.Long" resultType="int">
+	    SELECT COUNT(*)
+	    FROM ordetail_tbl
+	    WHERE ord_code = #{ord_code}
+	</select>
+	
+	<!-- 0이면 주문 삭제 -->
+	<delete id="deleteOrder">
+	    DELETE FROM order_tbl
+	    WHERE ord_code = #{ord_code}
+	</delete>
+	
+	<!-- 주문의 총 금액 조회 -->
+	<select id="getOrderAmount" parameterType="java.lang.Long" resultType="int">
+	    SELECT SUM(dt_price * dt_amount)
+	    FROM ordetail_tbl
+	    WHERE ord_code = #{ord_code}
+	</select>
+	
+	<!-- 주문 금액 업데이트 -->
+	<!-- updateOrderAmount -->
+	<update id="updateOrderAmount">
+	    UPDATE order_tbl
+	    SET ord_price = #{orderAmount}
+	    WHERE ord_code = #{ord_code}
+	</update>
+	
+	<!-- 주문 코드로 주문 삭제 -->
+	<!-- order_code 주문삭제  -->
+	<delete id="orderDelete">
+		delete from 
+			order_tbl
+		where 
+			ord_code = #{ord_code}
+	</delete>
+	
+	<!-- 주문 상세 전체 삭제 -->
+	<delete id="orderDetailDelete">
+	
+		delete from 
+			ordetail_tbl
+		where 
+			ord_code = #{ord_code}
+	
+	</delete>
+	
+	<!-- 결제 내역 삭제  -->
+	<delete id="paymentDelete">
+	
+		delete from 
+			payment_tbl
+		where 
+			ord_code = #{ord_code}
+	
+	</delete>
+
+
+</mapper>
